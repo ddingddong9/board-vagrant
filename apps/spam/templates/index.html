@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>AI 카테고리 자동 분류 게시판 (과제용)</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 650px; margin: 40px auto; padding: 0 20px; }
+        .form-group { margin-bottom: 15px; }
+        input[type="text"], textarea { width: 100%; padding: 8px; box-sizing: border-box; }
+        button { padding: 10px 15px; background: #28A745; color: white; border: none; cursor: pointer; }
+        button.delete-btn { background: #DC3545; padding: 5px 10px; font-size: 12px; float: right;}
+        .post-card { border: 1px solid #ddd; padding: 15px; margin-top: 15px; border-radius: 4px; }
+        .badge { display: inline-block; padding: 3px 7px; font-size: 12px; font-weight: bold; border-radius: 3px; margin-right: 5px; color: white;}
+        .bg-qa { background-color: #17A2B8; }
+        .bg-review { background-color: #007BFF; }
+        .bg-default { background-color: #6C757D; }
+    </style>
+</head>
+<body>
+
+    <h2>🎯 실습 과제: AI 자동 분류 및 스팸 방지 게시판</h2>
+    <p style="color: #666; font-size: 14px;">텍스트 문맥을 분석하여 AI가 카테고리를 알아서 매핑하거나 스팸을 걸러냅니다.</p>
+    
+    <div class="form-group">
+        <input type="text" id="title" placeholder="제목을 입력하세요">
+    </div>
+    <div class="form-group">
+        <textarea id="content" rows="4" placeholder="내용을 작성하세요.&#10;(테스트 예: '배송 언제 오나요?', '최고에요 추천합니다', '대박 지원금 무료 링크')"></textarea>
+    </div>
+    <button onclick="submitPost()">게시글 등록하기</button>
+
+    <hr>
+
+    <h2>📋 게시판 피드</h2>
+    <div id="posts-list"></div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", loadPosts);
+
+        async function loadPosts() {
+            const response = await fetch('/api/posts');
+            const posts = await response.json();
+            const listDiv = document.getElementById('posts-list');
+            listDiv.innerHTML = '';
+
+            if(posts.length === 0) {
+                listDiv.innerHTML = '<p>등록된 피드가 없습니다.</p>';
+                return;
+            }
+
+            posts.forEach(post => {
+                const card = document.createElement('div');
+                card.className = 'post-card';
+                
+                // 카테고리별 배지 스타일 적용
+                let badgeClass = 'bg-default';
+                if(post.category === 'Q&A') badgeClass = 'bg-qa';
+                if(post.category === 'Review') badgeClass = 'bg-review';
+
+                card.innerHTML = `
+                    <button class="delete-btn" onclick="deletePost(${post.id})">삭제</button>
+                    <h3><span class="badge ${badgeClass}">${post.category}</span> ${post.title}</h3>
+                    <p>${post.content}</p>
+                `;
+                listDiv.appendChild(card);
+            });
+        }
+
+        async function submitPost() {
+            const title = document.getElementById('title').value;
+            const content = document.getElementById('content').value;
+
+            if(!title || !content) {
+                alert("제목과 내용을 모두 채워주세요.");
+                return;
+            }
+
+            const response = await fetch('/api/posts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, content })
+            });
+            const result = await response.json();
+
+            alert(result.message);
+
+            if (result.success) {
+                document.getElementById('title').value = '';
+                document.getElementById('content').value = '';
+                loadPosts();
+            }
+        }
+
+        async function deletePost(postId) {
+            if(!confirm("글을 삭제하시겠습니까?")) return;
+            const response = await fetch(`/api/posts/${postId}`, { method: 'DELETE' });
+            await response.json();
+            loadPosts();
+        }
+    </script>
+</body>
+</html>
