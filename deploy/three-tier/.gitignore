@@ -1,0 +1,6 @@
+.vagrant/
+config/*.env
+config/*.token
+*.log
+backups/
+.DS_Store

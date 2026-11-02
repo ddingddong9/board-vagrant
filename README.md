@@ -7,3 +7,7 @@
 - requirements.txt: Python 패키지
 
 DB 연결은 VM에서 생성하는 .env의 DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_DATABASE를 사용합니다. DB 비밀번호, Cloudflare 토큰, SSH 키, 실제 게시글 데이터는 포함하지 않습니다. 모델은 설치 시 학습 코드로 생성합니다.
+
+## 3티어 WEB / WAS / DB
+
+[deploy/three-tier](deploy/three-tier)의 Vagrantfile 및 서버별 설치 스크립트로 Nginx WEB, Gunicorn·Gevent WAS, MariaDB DB를 각각 생성합니다. 자세한 실행 방법은 해당 폴더 README를 참고하세요.

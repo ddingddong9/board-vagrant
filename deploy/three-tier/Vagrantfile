@@ -1,0 +1,53 @@
+# -*- mode: ruby -*-
+# Embedded Ruby Socket.tcp(connect_timeout:) can report closed ports as open.
+# Use a bounded synchronous connection check; real listeners still collide.
+require "socket"
+require "timeout"
+require "vagrant/util/is_port_open"
+module Vagrant::Util::IsPortOpen
+  def is_port_open?(host, port)
+    Timeout.timeout(1) { TCPSocket.new(host, port).close }
+    true
+  rescue SystemCallError, IOError, Timeout::Error
+    false
+  end
+end
+
+ENV["VAGRANT_DEFAULT_PROVIDER"] ||= "vmware_desktop"
+Vagrant.configure("2") do |config|
+  config.vm.box = "bento/ubuntu-24.04"
+  config.vm.box_architecture = "arm64"
+  config.vm.synced_folder ".", "/vagrant", disabled: true
+  {
+    "db" => ["192.168.157.132", 4323, 1024],
+    "was" => ["192.168.157.131", 4322, 1536],
+    "web" => ["192.168.157.130", 4321, 512]
+  }.each do |role, (ip, ssh_port, memory)|
+    config.vm.define role do |vm|
+      vm.vm.hostname = "three-tier-#{role}"
+      vm.vm.network "private_network", ip: ip
+      vm.vm.network "forwarded_port", guest: 22, host: ssh_port,
+        host_ip: "127.0.0.1", id: "ssh", auto_correct: false
+      if role == "web"
+        vm.vm.network "forwarded_port", guest: 80, host: 35000,
+          host_ip: "127.0.0.1", id: "web", auto_correct: false
+      end
+      vm.vm.provider "vmware_desktop" do |provider|
+        provider.gui = true
+        provider.vmx["displayname"] = "three-tier-#{role}"
+        provider.vmx["memsize"] = memory.to_s
+        provider.vmx["numvcpus"] = "1"
+      end
+      vm.vm.provider "virtualbox" do |provider|
+        provider.name = "three-tier-#{role}"
+        provider.memory = memory
+        provider.cpus = 1
+      end
+      if role != "web"
+        vm.vm.provision "shell", inline: "install -d -m 700 -o vagrant -g vagrant /home/vagrant/provision"
+        vm.vm.provision "file", source: "config/secrets.env", destination: "/home/vagrant/provision/secrets.env"
+      end
+      vm.vm.provision "shell", path: "#{role}_setup.sh"
+    end
+  end
+end
