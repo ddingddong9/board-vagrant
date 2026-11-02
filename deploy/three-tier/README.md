@@ -50,3 +50,7 @@ WAS는 apps/board와 requirements.txt를 받고 AI 모델을 학습한 뒤 app:a
 기존 Cloudflare 도메인은 그대로 기존 서버에 연결되어 있습니다. 3티어 외부 연결 시 cloudflared를 WEB에 설치하고 터널 서비스를 http://localhost:80으로 지정합니다.
 기존 터널과 동시에 같은 토큰의 커넥터를 켜면 요청이 양쪽에 분산될 수 있으므로 실제 이전 시 기존 커넥터 종료와 함께 전환해야 합니다.
 암호·터널 토큰·SSH 키는 GitHub에 업로드하지 않습니다.
+
+## 검증 결과 (2026-11-02)
+
+VMware에서 세 VM을 새로 생성하여 설치 완료. WEB 정적 HTML 제공, WEB → WAS → DB 조회 및 글 등록·조회·삭제, AI 차단 검사 통과. 시험 데이터는 삭제했습니다. `python3 verify_crud.py`로 같은 검증을 실행할 수 있습니다.
